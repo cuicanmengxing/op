@@ -10,22 +10,29 @@
 # See /LICENSE for more information.
 #
 
-# Modify default IP
-sed -i 's/192.168.1.1/10.0.0.1/g' package/base-files/files/bin/config_generate
+git pull
 
-# Modify default theme
-sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+echo "src-git small8 https://github.com/kenzok8/small-package" >> feeds.conf.default
 
-# Modify hostname
-sed -i 's/OpenWrt/S1-Router/g' package/base-files/files/bin/config_generate
-rm -rf package/lean/luci-app-argon-config # if have
-git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/lean/luci-app-argon-config
-rm -rf package/lean/luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/lean/luci-theme-argon
-# drop mosdns and v2ray-geodata packages that come with the source
-find ./ | grep Makefile | grep v2ray-geodata | xargs rm -f
-find ./ | grep Makefile | grep mosdns | xargs rm -f
+./scripts/feeds clean
+./scripts/feeds update -a
 
-git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
-git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
-git clone https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
+\rm -rf ./feeds/luci/applications/{luci-app-passwall,luci-app-smartdns,luci-app-ddns-go,luci-app-rclone,luci-app-ssr-plus,luci-app-vssr}
+\rm -rf ./feeds/luci/themes/luci-theme-argon
+\rm -rf ./feeds/packages/net/{haproxy,xray-core,xray-plugin,mosdns,smartdns,ddns-go,dns2tcp,dns2socks}
+\rm -rf ./feeds/small8/{ppp,firewall,dae,daed,daed-next,libnftnl,nftables,dnsmasq}
+
+if [[ -d ./feeds/packages/lang/golang ]]; then
+	\rm -rf ./feeds/packages/lang/golang
+	git clone https://github.com/sbwml/packages_lang_golang -b 22.x ./feeds/packages/lang/golang
+fi
+
+./scripts/feeds update -i
+./scripts/feeds install -f -ap packages
+./scripts/feeds install -f -ap luci
+./scripts/feeds install -f -ap routing
+./scripts/feeds install -f -ap telephony
+
+./scripts/feeds install -p small8 -f luci-app-adguardhome xray-core xray-plugin dns2tcp dns2socks haproxy \
+luci-app-passwall luci-app-mosdns luci-app-smartdns luci-app-ddns-go luci-app-cloudflarespeedtest taskd \
+luci-lib-xterm luci-lib-taskd luci-app-store quickstart luci-app-quickstart luci-app-istorex luci-theme-argon
